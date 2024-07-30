@@ -1,121 +1,137 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
-canvas.width = 320;
-canvas.height = 480;
+canvas.width = 800;
+canvas.height = 600;
 
-const bird = {
-    x: 50,
-    y: canvas.height / 2,
-    width: 20,
-    height: 20,
-    gravity: 0.6,
-    lift: -12,
-    velocity: 0,
-    color: '#ff0'
+const player = {
+    x: canvas.width / 2 - 25,
+    y: canvas.height - 60,
+    width: 50,
+    height: 50,
+    color: '#ff5733',
+    speed: 5,
 };
 
-const pipes = [];
-const pipeWidth = 50;
-const pipeGap = 100;
-const pipeSpeed = 2;
+const obstacles = [];
+const powerUps = [];
+const obstacleWidth = 50;
+const obstacleHeight = 50;
+const powerUpSize = 30;
+const obstacleSpeed = 3;
+const powerUpInterval = 5000; // in milliseconds
 
-let frame = 0;
 let score = 0;
 let gameOver = false;
+let lastPowerUpTime = Date.now();
 
-function drawBird() {
-    ctx.fillStyle = bird.color;
-    ctx.fillRect(bird.x, bird.y, bird.width, bird.height);
+function drawPlayer() {
+    ctx.fillStyle = player.color;
+    ctx.fillRect(player.x, player.y, player.width, player.height);
 }
 
-function drawPipes() {
-    ctx.fillStyle = '#0f0';
-    pipes.forEach(pipe => {
-        ctx.fillRect(pipe.x, 0, pipeWidth, pipe.top);
-        ctx.fillRect(pipe.x, canvas.height - pipe.bottom, pipeWidth, pipe.bottom);
+function drawObstacles() {
+    ctx.fillStyle = '#00aaff';
+    obstacles.forEach(obs => {
+        ctx.fillRect(obs.x, obs.y, obstacleWidth, obstacleHeight);
+    });
+}
+
+function drawPowerUps() {
+    ctx.fillStyle = '#ffea00';
+    powerUps.forEach(pu => {
+        ctx.fillRect(pu.x, pu.y, powerUpSize, powerUpSize);
     });
 }
 
 function drawScore() {
-    ctx.fillStyle = '#000';
-    ctx.font = '20px Arial';
-    ctx.fillText(`Score: ${score}`, 10, 20);
+    ctx.fillStyle = '#fff';
+    ctx.font = '24px Arial';
+    ctx.fillText(`Score: ${score}`, 10, 30);
 }
 
-function updateBird() {
-    bird.velocity += bird.gravity;
-    bird.y += bird.velocity;
-
-    if (bird.y + bird.height > canvas.height || bird.y < 0) {
-        gameOver = true;
-    }
+function updatePlayer() {
+    if (keys['ArrowLeft'] && player.x > 0) player.x -= player.speed;
+    if (keys['ArrowRight'] && player.x + player.width < canvas.width) player.x += player.speed;
 }
 
-function updatePipes() {
-    pipes.forEach(pipe => {
-        pipe.x -= pipeSpeed;
-
-        if (pipe.x + pipeWidth < 0) {
-            pipes.shift();
-            score++;
-        }
+function updateObstacles() {
+    obstacles.forEach(obs => {
+        obs.y += obstacleSpeed;
     });
-
-    if (frame % 90 === 0) {
-        const pipeHeight = Math.random() * (canvas.height - pipeGap - 50) + 25;
-        pipes.push({
-            x: canvas.width,
-            top: pipeHeight,
-            bottom: canvas.height - pipeHeight - pipeGap,
+    obstacles.filter(obs => obs.y <= canvas.height);
+    if (Math.random() < 0.02) {
+        obstacles.push({
+            x: Math.random() * (canvas.width - obstacleWidth),
+            y: -obstacleHeight,
         });
     }
 }
 
-function checkCollision() {
-    for (const pipe of pipes) {
-        if (bird.x < pipe.x + pipeWidth &&
-            bird.x + bird.width > pipe.x &&
-            (bird.y < pipe.top || bird.y + bird.height > canvas.height - pipe.bottom)) {
-            gameOver = true;
-        }
+function updatePowerUps() {
+    powerUps.forEach(pu => {
+        pu.y += obstacleSpeed;
+    });
+    powerUps = powerUps.filter(pu => pu.y <= canvas.height);
+    if (Date.now() - lastPowerUpTime > powerUpInterval) {
+        powerUps.push({
+            x: Math.random() * (canvas.width - powerUpSize),
+            y: -powerUpSize,
+        });
+        lastPowerUpTime = Date.now();
     }
 }
 
-function handleKeyPress(e) {
-    if (e.key === ' ' || e.key === 'ArrowUp') {
-        bird.velocity = bird.lift;
-    }
+function checkCollisions() {
+    obstacles.forEach(obs => {
+        if (player.x < obs.x + obstacleWidth &&
+            player.x + player.width > obs.x &&
+            player.y < obs.y + obstacleHeight &&
+            player.y + player.height > obs.y) {
+            gameOver = true;
+        }
+    });
+    
+    powerUps.forEach(pu => {
+        if (player.x < pu.x + powerUpSize &&
+            player.x + player.width > pu.x &&
+            player.y < pu.y + powerUpSize &&
+            player.y + player.height > pu.y) {
+            score += 10;
+            powerUps.splice(powerUps.indexOf(pu), 1);
+        }
+    });
 }
 
 function gameLoop() {
     if (gameOver) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = '#000';
-        ctx.font = '30px Arial';
-        ctx.fillText('Game Over', canvas.width / 2 - 80, canvas.height / 2);
+        ctx.fillStyle = '#fff';
+        ctx.font = '40px Arial';
+        ctx.fillText('Game Over', canvas.width / 2 - 100, canvas.height / 2);
         return;
     }
 
-    frame++;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    updateBird();
-    updatePipes();
-    checkCollision();
+    updatePlayer();
+    updateObstacles();
+    updatePowerUps();
+    checkCollisions();
 
-    drawBird();
-    drawPipes();
+    drawPlayer();
+    drawObstacles();
+    drawPowerUps();
     drawScore();
 
     requestAnimationFrame(gameLoop);
 }
 
-document.addEventListener('keydown', handleKeyPress);
-document.addEventListener('click', () => {
-    if (!gameOver) {
-        bird.velocity = bird.lift;
-    }
+const keys = {};
+document.addEventListener('keydown', e => {
+    keys[e.key] = true;
+});
+document.addEventListener('keyup', e => {
+    keys[e.key] = false;
 });
 
 gameLoop();
