@@ -1,10 +1,10 @@
 body {
     margin: 0;
     overflow: hidden;
-    background-color: #70c5ce;
+    background-color: #282c34;
 }
 
-#gameCanvasContainer {
+#gameContainer {
     position: relative;
     width: 100vw;
     height: 100vh;
@@ -14,5 +14,6 @@ body {
 }
 
 canvas {
-    background-color: #70c5ce;
+    border: 1px solid #fff;
+    background-color: #282c34;
 }
