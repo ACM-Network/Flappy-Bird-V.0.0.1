@@ -1,103 +1,114 @@
-document.addEventListener('DOMContentLoaded', () => {
-    const board = document.getElementById('board');
-    let score = 0;
-    let grid = Array(4).fill(null).map(() => Array(4).fill(0));
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
 
-    function drawBoard() {
-        board.innerHTML = '';
-        grid.forEach(row => {
-            row.forEach(cell => {
-                const tile = document.createElement('div');
-                tile.className = 'tile';
-                tile.classList.add('t' + cell);
-                tile.textContent = cell > 0 ? cell : '';
-                board.appendChild(tile);
-            });
-        });
+canvas.width = 320;
+canvas.height = 480;
+
+const bird = {
+    x: 50,
+    y: canvas.height / 2,
+    width: 20,
+    height: 20,
+    gravity: 0.6,
+    lift: -12,
+    velocity: 0,
+};
+
+const pipes = [];
+const pipeWidth = 50;
+const pipeGap = 100;
+const pipeSpeed = 2;
+
+let frame = 0;
+let score = 0;
+let gameOver = false;
+
+function drawBird() {
+    ctx.fillStyle = '#ff0';
+    ctx.fillRect(bird.x, bird.y, bird.width, bird.height);
+}
+
+function drawPipes() {
+    ctx.fillStyle = '#0f0';
+    pipes.forEach(pipe => {
+        ctx.fillRect(pipe.x, 0, pipeWidth, pipe.top);
+        ctx.fillRect(pipe.x, canvas.height - pipe.bottom, pipeWidth, pipe.bottom);
+    });
+}
+
+function drawScore() {
+    ctx.fillStyle = '#000';
+    ctx.font = '20px Arial';
+    ctx.fillText(`Score: ${score}`, 10, 20);
+}
+
+function updateBird() {
+    bird.velocity += bird.gravity;
+    bird.y += bird.velocity;
+
+    if (bird.y + bird.height > canvas.height || bird.y < 0) {
+        gameOver = true;
     }
+}
 
-    function generateNumber() {
-        let emptyCells = [];
-        grid.forEach((row, r) => {
-            row.forEach((cell, c) => {
-                if (cell === 0) emptyCells.push({ r, c });
-            });
-        });
+function updatePipes() {
+    pipes.forEach(pipe => {
+        pipe.x -= pipeSpeed;
 
-        if (emptyCells.length === 0) return;
-
-        let { r, c } = emptyCells[Math.floor(Math.random() * emptyCells.length)];
-        grid[r][c] = Math.random() < 0.9 ? 2 : 4;
-        drawBoard();
-    }
-
-    function slide(row, reverse = false) {
-        let newRow = row.filter(x => x);
-        while (newRow.length < 4) newRow.push(0);
-        if (reverse) newRow.reverse();
-        return newRow;
-    }
-
-    function merge(row, reverse = false) {
-        let newRow = slide(row, reverse);
-        for (let i = 0; i < 3; i++) {
-            if (newRow[i] === newRow[i + 1] && newRow[i] !== 0) {
-                newRow[i] *= 2;
-                score += newRow[i];
-                newRow[i + 1] = 0;
-            }
+        if (pipe.x + pipeWidth < 0) {
+            pipes.shift();
+            score++;
         }
-        newRow = slide(newRow, reverse);
-        return newRow;
-    }
-
-    function move(direction) {
-        let moved = false;
-        if (direction === 'left') {
-            grid = grid.map(row => {
-                let newRow = merge(slide(row));
-                if (JSON.stringify(row) !== JSON.stringify(newRow)) moved = true;
-                return newRow;
-            });
-        } else if (direction === 'right') {
-            grid = grid.map(row => {
-                let newRow = merge(slide(row, true));
-                if (JSON.stringify(row) !== JSON.stringify(newRow)) moved = true;
-                return newRow.reverse();
-            });
-        } else if (direction === 'up') {
-            grid = transpose(grid).map(row => {
-                let newRow = merge(slide(row));
-                if (JSON.stringify(row) !== JSON.stringify(newRow)) moved = true;
-                return newRow;
-            });
-            grid = transpose(grid);
-        } else if (direction === 'down') {
-            grid = transpose(grid).map(row => {
-                let newRow = merge(slide(row, true));
-                if (JSON.stringify(row) !== JSON.stringify(newRow)) moved = true;
-                return newRow.reverse();
-            });
-            grid = transpose(grid);
-        }
-        if (moved) {
-            generateNumber();
-        }
-        drawBoard();
-        document.getElementById('score').textContent = 'Score: ' + score;
-    }
-
-    function transpose(matrix) {
-        return matrix[0].map((_, i) => matrix.map(row => row[i]));
-    }
-
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'ArrowLeft') move('left');
-        if (e.key === 'ArrowRight') move('right');
-        if (e.key === 'ArrowUp') move('up');
-        if (e.key === 'ArrowDown') move('down');
     });
 
-    generateNumber();
-    drawBoard();
-});
+    if (frame % 90 === 0) {
+        const pipeHeight = Math.random() * (canvas.height - pipeGap - 50) + 25;
+        pipes.push({
+            x: canvas.width,
+            top: pipeHeight,
+            bottom: canvas.height - pipeHeight - pipeGap,
+        });
+    }
+}
+
+function checkCollision() {
+    for (const pipe of pipes) {
+        if (bird.x < pipe.x + pipeWidth &&
+            bird.x + bird.width > pipe.x &&
+            (bird.y < pipe.top || bird.y + bird.height > canvas.height - pipe.bottom)) {
+            gameOver = true;
+        }
+    }
+}
+
+function handleKeyPress(e) {
+    if (e.key === ' ') {
+        bird.velocity = bird.lift;
+    }
+}
+
+function gameLoop() {
+    if (gameOver) {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.fillStyle = '#000';
+        ctx.font = '30px Arial';
+        ctx.fillText('Game Over', canvas.width / 2 - 80, canvas.height / 2);
+        return;
+    }
+
+    frame++;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    updateBird();
+    updatePipes();
+    checkCollision();
+
+    drawBird();
+    drawPipes();
+    drawScore();
+
+    requestAnimationFrame(gameLoop);
+}
+
+document.addEventListener('keydown', handleKeyPress);
+gameLoop();
