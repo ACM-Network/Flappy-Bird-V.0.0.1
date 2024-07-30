@@ -12,6 +12,7 @@ const bird = {
     gravity: 0.6,
     lift: -12,
     velocity: 0,
+    color: '#ff0'
 };
 
 const pipes = [];
@@ -24,7 +25,7 @@ let score = 0;
 let gameOver = false;
 
 function drawBird() {
-    ctx.fillStyle = '#ff0';
+    ctx.fillStyle = bird.color;
     ctx.fillRect(bird.x, bird.y, bird.width, bird.height);
 }
 
@@ -82,7 +83,7 @@ function checkCollision() {
 }
 
 function handleKeyPress(e) {
-    if (e.key === ' ') {
+    if (e.key === ' ' || e.key === 'ArrowUp') {
         bird.velocity = bird.lift;
     }
 }
@@ -111,4 +112,10 @@ function gameLoop() {
 }
 
 document.addEventListener('keydown', handleKeyPress);
+document.addEventListener('click', () => {
+    if (!gameOver) {
+        bird.velocity = bird.lift;
+    }
+});
+
 gameLoop();
