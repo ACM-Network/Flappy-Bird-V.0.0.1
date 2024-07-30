@@ -1,44 +1,16 @@
 body {
-    font-family: Arial, sans-serif;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
     margin: 0;
-    background: #faf8ef;
+    overflow: hidden;
+    background-color: #70c5ce;
 }
 
-#game-container {
-    text-align: center;
+#gameCanvasContainer {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
 }
 
-#board {
-    display: grid;
-    grid-template-columns: repeat(4, 100px);
-    grid-gap: 10px;
-    margin: 0 auto;
+canvas {
+    display: block;
+    background-color: #70c5ce;
 }
-
-.tile {
-    width: 100px;
-    height: 100px;
-    background: #eee4da;
-    font-size: 32px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    color: #776e65;
-    border-radius: 5px;
-}
-
-.tile.t2 { background: #eee4da; }
-.tile.t4 { background: #ede0c8; }
-.tile.t8 { background: #f2b179; }
-.tile.t16 { background: #f59563; }
-.tile.t32 { background: #f67c5f; }
-.tile.t64 { background: #f65e3b; }
-.tile.t128 { background: #edcf72; color: #f9f6f2; }
-.tile.t256 { background: #edcc61; color: #f9f6f2; }
-.tile.t512 { background: #edc850; color: #f9f6f2; }
-.tile.t1024 { background: #edc53f; color: #f9f6f2; }
-.tile.t2048 { background: #edc22e; color: #f9f6f2; }
